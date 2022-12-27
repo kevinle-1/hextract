@@ -1,4 +1,4 @@
-IMAGE_SRC = 'sample/test.jpg'
+IMAGE_SRC = 'sample/firefox_xW0AQZNEnT.png'
 
 const loadImage = () => {
   const img = new Image()
@@ -10,8 +10,21 @@ const loadImage = () => {
   const ctx = canvas.getContext('2d')
 
   img.addEventListener('load', () => {
-    canvas.width = img.width
-    canvas.height = img.height
+    canvas.height = img.height;
+    canvas.width = img.width;
+
+    // Resizing logic affects background removal quality :(
+    // canvas.height = canvas.width * (img.height / img.width);\
+
+    // var oc = document.createElement('canvas'),
+    // octx = oc.getContext('2d');
+    // oc.width = img.width * 0.5;
+    // oc.height = img.height * 0.5;
+    // octx.drawImage(img, 0, 0, oc.width, oc.height);
+
+    // octx.drawImage(oc, 0, 0, oc.width * 0.5, oc.height * 0.5);
+    // ctx.drawImage(oc, 0, 0, oc.width * 0.5, oc.height * 0.5, 0, 0, canvas.width, canvas.height);
+
     ctx.drawImage(img, 0, 0)
     backgroundRemoval()
   })
@@ -34,7 +47,6 @@ const backgroundRemoval = async () => {
   })
 
   const ctx = canvas.getContext('2d')
-  const { data: imgData } = ctx.getImageData(0, 0, canvas.width, canvas.height)
 
   console.log("RGB");
 
