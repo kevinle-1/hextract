@@ -2,8 +2,6 @@ import React, { useRef, useEffect, useState } from 'react'
 import type { NextPage } from 'next'
 import styles from '../styles/Home.module.scss'
 
-import sampleImg from '../sample/firefox_9HJSePiW27.png';
-
 import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import '@tensorflow/tfjs-backend-webgl';
 
@@ -13,7 +11,7 @@ const Home: NextPage = () => {
   const [processing, setProcessing] = useState<boolean>(false);
 
   const [exec, setExec] = useState<number | null>(null);
-  const [fileLoaded, setFileLoaded] = useState<boolean>(false);
+  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
 
   // mike-von-YsiSAp3ccvk-unsplash
   const [url, setUrl] = useState<string>("https://i.imgur.com/M5QR39R.png");
@@ -36,66 +34,65 @@ const Home: NextPage = () => {
   }
 
   useEffect(() => {
-    setProcessing(true);
+    const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 
-    // TODO: Consider loading directly into the canvas instead of img frame
-    //const image = document.getElementById("image") as HTMLImageElement;
+    if (imageLoaded){
+      setProcessing(true);
 
-    bodySegmentation.createSegmenter(model, bodyPixConfig).then(async (segmenter) => {
-      var startTime = performance.now()
+      bodySegmentation.createSegmenter(model, bodyPixConfig).then(async (segmenter) => {
+        var startTime = performance.now()
 
-      console.log("Begin image processing");
-      const canvas = document.getElementById('canvas') as HTMLCanvasElement;
+        console.log("Begin image processing");
 
-      var ctx = canvas.getContext('2d')!;
-      var imageData = ctx.getImageData(0,0, canvas.width, canvas.height);
+        var ctx = canvas.getContext('2d')!;
+        var imageData = ctx.getImageData(0,0, canvas.width, canvas.height);
 
-      // PixelInput = Tensor3D | ImageData | HTMLVideoElement | HTMLImageElement | HTMLCanvasElement | ImageBitmap;
-      const segmentation = await segmenter.segmentPeople(imageData, bodyPixConfig);
-      console.log("Segmentation completed")
+        // PixelInput = Tensor3D | ImageData | HTMLVideoElement | HTMLImageElement | HTMLCanvasElement | ImageBitmap;
+        const segmentation = await segmenter.segmentPeople(imageData, bodyPixConfig);
+        console.log("Segmentation completed")
 
-      const foregroundColor = {r: 255, g: 255, b: 255, a: 0};
-      const backgroundColor = {r: 255, g: 255, b: 255, a: 255};
-      const backgroundDarkeningMask = await bodySegmentation.toBinaryMask(
-          segmentation, foregroundColor, backgroundColor);
+        const foregroundColor = {r: 255, g: 255, b: 255, a: 0};
+        const backgroundColor = {r: 255, g: 255, b: 255, a: 255};
+        const backgroundDarkeningMask = await bodySegmentation.toBinaryMask(
+            segmentation, foregroundColor, backgroundColor);
 
-      const opacity = 1;
-      const maskBlurAmount = 0; // range [0,20], default: 0
-      const flipHorizontal = false;
+        const opacity = 1;
+        const maskBlurAmount = 0; // range [0,20], default: 0
+        const flipHorizontal = false;
 
-      // await bodySegmentation.drawBokehEffect(canvas, image, segmentation);
-      await bodySegmentation.drawMask(
-        canvas, imageData, backgroundDarkeningMask, opacity, maskBlurAmount, flipHorizontal);
+        // await bodySegmentation.drawBokehEffect(canvas, image, segmentation);
+        await bodySegmentation.drawMask(
+          canvas, imageData, backgroundDarkeningMask, opacity, maskBlurAmount, flipHorizontal);
 
-      ctx = canvas.getContext('2d')!;
-      imageData = ctx.getImageData(0,0, canvas.width, canvas.height);
+        ctx = canvas.getContext('2d')!;
+        imageData = ctx.getImageData(0,0, canvas.width, canvas.height);
 
-      const pixel = imageData.data;
+        const pixel = imageData.data;
 
-      for (var p = 0; p<pixel.length; p+=4)
-      {
-        if (
-            pixel[p+r] == 255 &&
-            pixel[p+g] == 255 &&
-            pixel[p+b] == 255)
+        for (var p = 0; p<pixel.length; p+=4)
         {
-          pixel[p+a] = 0;
+          if (
+              pixel[p+r] == 255 &&
+              pixel[p+g] == 255 &&
+              pixel[p+b] == 255)
+          {
+            pixel[p+a] = 0;
+          }
+          else {
+            // TODO: Build [[R,G,B], ..., n] array for colour quantization
+          }
         }
-        else {
-          // TODO: Build [[R,G,B], ..., n] array for colour quantization
-        }
-      }
 
-      ctx.putImageData(imageData,0,0);
+        ctx.putImageData(imageData,0,0);
 
-      setProcessing(false);
+        setProcessing(false);
+        setImageLoaded(false);
 
-      var endTime = performance.now()
-      setExec(endTime - startTime);
-    });
-
-    setFileLoaded(false);
-  }, [fileLoaded]);
+        var endTime = performance.now()
+        setExec(endTime - startTime);
+      });
+    }
+  }, [imageLoaded]);
 
   const loadImage = (event: React.ChangeEvent<HTMLInputElement> | null, src: string | null) => {
     var img: HTMLImageElement = new Image();
@@ -114,7 +111,7 @@ const Home: NextPage = () => {
 
     img.src = src == null ? URL.createObjectURL(event!.target.files![0]) : src;
 
-    setFileLoaded(true);
+    setImageLoaded(true);
   }
 
   return (
@@ -125,7 +122,7 @@ const Home: NextPage = () => {
         <input type="text" onChange={e => setUrl(e.target.value)} placeholder="Image URL (CORS ISSUES)"></input>
         <button onClick={e => loadImage(null, url)}>Load Image</button><br/><br/>
       </div>
-      {/* <img id="image" className={styles.image} src={fileLoaded ? "" : url} crossOrigin="anonymous"></img> */}
+      {/* <img id="image" className={styles.image} src={imageLoaded ? "" : url} crossOrigin="anonymous"></img> */}
       <canvas id="canvas" className={styles.canvas}></canvas>
       {/* <canvas id="canvas2"></canvas> */}
       {processing ? <h4>Processing image...</h4> : null}
