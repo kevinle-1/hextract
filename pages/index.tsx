@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react'
 import type { NextPage } from 'next'
-import Image from 'next/image'
 import styles from '../styles/Home.module.scss'
 
 import sampleImg from '../sample/firefox_9HJSePiW27.png';
@@ -15,6 +14,8 @@ const Home: NextPage = () => {
 
   const [exec, setExec] = useState<number | null>(null);
   const [fileLoaded, setFileLoaded] = useState<boolean>(false);
+
+  // mike-von-YsiSAp3ccvk-unsplash
   const [url, setUrl] = useState<string>("https://i.imgur.com/M5QR39R.png");
 
   // https://google.github.io/mediapipe/solutions/selfie_segmentation.html
@@ -26,7 +27,7 @@ const Home: NextPage = () => {
   const model = bodySegmentation.SupportedModels.BodyPix;
 
   // TODO: Need to mess around with this
-  const bodyPixConfig = {
+  const bodyPixConfig: any = {
     architecture: 'ResNet50',
     multiplier: 1,
     multiSegmentation: false,
@@ -38,20 +39,20 @@ const Home: NextPage = () => {
     setProcessing(true);
 
     // TODO: Consider loading directly into the canvas instead of img frame
-    const image = document.getElementById("image") as HTMLImageElement;
+    //const image = document.getElementById("image") as HTMLImageElement;
 
     bodySegmentation.createSegmenter(model, bodyPixConfig).then(async (segmenter) => {
       var startTime = performance.now()
 
       console.log("Begin image processing");
+      const canvas = document.getElementById('canvas') as HTMLCanvasElement;
+
+      var ctx = canvas.getContext('2d')!;
+      var imageData = ctx.getImageData(0,0, canvas.width, canvas.height);
 
       // PixelInput = Tensor3D | ImageData | HTMLVideoElement | HTMLImageElement | HTMLCanvasElement | ImageBitmap;
-
-      // TODO: Image seems to not be ready when this event is triggered
-      // Error: Requested texture size [0x0] is invalid.
-      const segmentation = await segmenter.segmentPeople(image, bodyPixConfig);
-
-      const canvas = document.getElementById('canvas') as HTMLCanvasElement;
+      const segmentation = await segmenter.segmentPeople(imageData, bodyPixConfig);
+      console.log("Segmentation completed")
 
       const foregroundColor = {r: 255, g: 255, b: 255, a: 0};
       const backgroundColor = {r: 255, g: 255, b: 255, a: 255};
@@ -64,10 +65,10 @@ const Home: NextPage = () => {
 
       // await bodySegmentation.drawBokehEffect(canvas, image, segmentation);
       await bodySegmentation.drawMask(
-        canvas, image, backgroundDarkeningMask, opacity, maskBlurAmount, flipHorizontal);
+        canvas, imageData, backgroundDarkeningMask, opacity, maskBlurAmount, flipHorizontal);
 
-      const ctx = canvas.getContext('2d')!;
-      const imageData = ctx.getImageData(0,0, canvas.width, canvas.height);
+      ctx = canvas.getContext('2d')!;
+      imageData = ctx.getImageData(0,0, canvas.width, canvas.height);
 
       const pixel = imageData.data;
 
@@ -76,8 +77,13 @@ const Home: NextPage = () => {
         if (
             pixel[p+r] == 255 &&
             pixel[p+g] == 255 &&
-            pixel[p+b] == 255) // if white then change alpha to 0
-        {pixel[p+a] = 0;}
+            pixel[p+b] == 255)
+        {
+          pixel[p+a] = 0;
+        }
+        else {
+          // TODO: Build [[R,G,B], ..., n] array for colour quantization
+        }
       }
 
       ctx.putImageData(imageData,0,0);
@@ -88,28 +94,38 @@ const Home: NextPage = () => {
       setExec(endTime - startTime);
     });
 
-  }, [fileLoaded, url]);
+    setFileLoaded(false);
+  }, [fileLoaded]);
 
-  const onFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
-    var selectedFile = event.target.files![0];
-    var reader = new FileReader();
+  const loadImage = (event: React.ChangeEvent<HTMLInputElement> | null, src: string | null) => {
+    var img: HTMLImageElement = new Image();
+    img.crossOrigin = "anonymous";
 
-    var img = document.getElementById("image") as HTMLImageElement;
-    img.title = selectedFile.name;
+    img.onload = () => {
+      var canvas = document.getElementById('canvas') as HTMLCanvasElement;
 
-    reader.onload = function(event: ProgressEvent<FileReader>) {
-      // console.log(event.target!.result);
-      img.src = event.target!.result;
-      setFileLoaded(true);
+      canvas.width = (500);
+      canvas.height = ((500/img.width) * img.height);
+
+      var ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0,0, canvas.width, canvas.height);
     };
+    img.onerror = () => alert("The provided src couldn't be loaded");
 
-    reader.readAsDataURL(selectedFile);
+    img.src = src == null ? URL.createObjectURL(event!.target.files![0]) : src;
+
+    setFileLoaded(true);
   }
 
   return (
     <div className={styles.container}><br/>
-      <input type="file" onChange={e => onFileSelected(e)}/><br/><br/>
-      <img id="image" className={styles.image} src={fileLoaded ? "" : url} crossOrigin="anonymous"></img>
+      <input type="file" onChange={e => loadImage(e, null)}/><br/><br/>
+      <div>
+        {/* Note: CORS issues */}
+        <input type="text" onChange={e => setUrl(e.target.value)} placeholder="Image URL (CORS ISSUES)"></input>
+        <button onClick={e => loadImage(null, url)}>Load Image</button><br/><br/>
+      </div>
+      {/* <img id="image" className={styles.image} src={fileLoaded ? "" : url} crossOrigin="anonymous"></img> */}
       <canvas id="canvas" className={styles.canvas}></canvas>
       {/* <canvas id="canvas2"></canvas> */}
       {processing ? <h4>Processing image...</h4> : null}
