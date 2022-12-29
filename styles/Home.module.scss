@@ -1,14 +1,11 @@
 .container {
   padding: 0 2rem;
+
+  :global .coolors-palette-widget {
+    width: 14em;
+  }
 }
 
-// TODO: Fix canvas resize
-
-// .image {
-//   width: 25em;
-// }
-
-// .canvas {
-//   width: 25em;
-//   height: 25em;
-// }
+.palette {
+  width: 10em;
+}
