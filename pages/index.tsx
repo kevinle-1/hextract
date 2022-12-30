@@ -155,7 +155,7 @@ const Home: NextPage = () => {
           <>
             {
               quantizedHexArray.map((hex) =>
-                <svg width="83" height="50">
+                <svg key={hex} width="83" height="50">
                   <rect width="83" height="50" style={{fill: "#" + hex}} />
                 </svg>
               )
