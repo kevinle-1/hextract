@@ -91,17 +91,20 @@ const Home: NextPage = () => {
         ctx.putImageData(imageData,0,0);
 
         console.log("Begin quantization");
-        const quantize = require('quantize');
-        const colorMap = quantize(rgbArray, 6);
-        const quantizedResult: number[][] = colorMap.palette();
 
-        let bufferQuantizedHexArray: string[] = []
-        quantizedResult.forEach((rgb) => {
-          bufferQuantizedHexArray.push(rgbToHex(rgb[0], rgb[1], rgb[2]));
-        })
+        if(rgbArray.length > 0) {
+          const quantize = require('quantize');
+          const colorMap = quantize(rgbArray, 6);
+          const quantizedResult: number[][] = colorMap.palette();
 
-        setQuantizedHexArray(bufferQuantizedHexArray);
-        console.log(bufferQuantizedHexArray);
+          let bufferQuantizedHexArray: string[] = []
+          quantizedResult.forEach((rgb) => {
+            bufferQuantizedHexArray.push(rgbToHex(rgb[0], rgb[1], rgb[2]));
+          })
+
+          setQuantizedHexArray(bufferQuantizedHexArray);
+          console.log(bufferQuantizedHexArray);
+        }
 
         setProcessing(false);
         setImageLoaded(false);
@@ -134,9 +137,6 @@ const Home: NextPage = () => {
 
   return (
     <div className={styles.container}><br/>
-      {/* <Head>
-        <script src="https://coolors.co/palette-widget/widget.js"></script>
-      </Head> */}
       <h2>Hextract (Proof of Concept)</h2>
       <p>A colour palette generator with subject extraction.</p>
       <p>Note: this will download ~100mb of Tensorflow models on first run - only use on uncapped data plans</p>
@@ -150,11 +150,22 @@ const Home: NextPage = () => {
       <canvas id="canvas" className={styles.canvas}></canvas><br/>
       {/* <canvas id="canvas2"></canvas> */}
 
-      {quantizedHexArray.length != 0 ? <a href={"https://coolors.co/" + quantizedHexArray.join("-")} target="_blank" rel="noreferrer">Palette</a> : null}
+      {
+        quantizedHexArray.length != 0 && !processing ?
+          <>
+            {
+              quantizedHexArray.map((hex) =>
+                <svg width="83" height="50">
+                  <rect width="83" height="50" style={{fill: "#" + hex}} />
+                </svg>
+              )
+            }
+            <br/>
+            <a href={"https://coolors.co/" + quantizedHexArray.join("-")} target="_blank" rel="noreferrer">Coolors Link</a>
+          </>:
+          null
+      }
 
-      {/* {quantizedHexArray.length != 0 ? <div className={styles.palette}>
-        <Script data-id="09199291287329397">new CoolorsPaletteWidget("09199291287329397", {quantizedHexArray})</Script>
-      </div> : null} */}
       {processing ? <h4>Processing image...</h4> : null}
       {exec != null && !processing ? <h4>Took {exec}ms to process</h4> : null}
     </div>
