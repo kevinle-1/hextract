@@ -10,9 +10,14 @@ Currently a proof of concept.
 
 ## Reasoning
 
-I have a friend who liked to apply fashion colour theory as inspiration for some of their outfits. They would take images off their Pinterest, Instagram, and other social media to load into an image to colour palette generator like Coolors. A minor problem was that it would extract the colours of the background also, and not only just the outfit.
+I have a friend that generates colour palettes from pictures online as inspiration for some of their outfits and to study fashion colour theory. They would take images off their Pinterest, Instagram, and other social media to load into an image to colour palette generator like Coolors. A minor problem was that it would extract the colours of the background also, and not only just the outfit.
 
 This is a fun little project to see what can be done to solve this using a fully local solution running in the browser.
+
+## Samples!
+
+![sample1](https://i.imgur.com/MEs21EF.png)
+![sample2](https://i.imgur.com/Slb0wC0.png)
 
 ## TODO:
 
